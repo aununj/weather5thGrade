@@ -1,0 +1,662 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Sun, Cloud, CloudRain, Wind, CloudLightning, CheckCircle, XCircle } from 'lucide-react';
+
+export default function WeatherApp() {
+  const [activeTab, setActiveTab] = useState('learn');
+
+  return (
+    <div className="min-h-screen bg-sky-50 text-slate-800 font-sans pb-10">
+      {/* Header */}
+      <header className="bg-sky-500 text-white p-6 shadow-md rounded-b-3xl">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-4 md:mb-0">
+            <Sun className="text-yellow-300" size={36} />
+            5th Grade Weather Lab
+          </h1>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveTab('learn')}
+              className={`px-4 py-2 rounded-full font-semibold transition-colors ${activeTab === 'learn' ? 'bg-white text-sky-600' : 'bg-sky-600 hover:bg-sky-400'}`}
+            >
+              1. Learn
+            </button>
+            <button 
+              onClick={() => setActiveTab('simulator')}
+              className={`px-4 py-2 rounded-full font-semibold transition-colors ${activeTab === 'simulator' ? 'bg-white text-sky-600' : 'bg-sky-600 hover:bg-sky-400'}`}
+            >
+              2. Simulator
+            </button>
+            <button 
+              onClick={() => setActiveTab('quiz')}
+              className={`px-4 py-2 rounded-full font-semibold transition-colors ${activeTab === 'quiz' ? 'bg-white text-sky-600' : 'bg-sky-600 hover:bg-sky-400'}`}
+            >
+              3. Quiz
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto mt-8 px-4">
+        {activeTab === 'learn' && <LearnSection />}
+        {activeTab === 'simulator' && <SimulatorSandbox />}
+        {activeTab === 'quiz' && <QuizSection />}
+      </main>
+    </div>
+  );
+}
+
+/* =========================================
+   COMPONENT 1: LEARN (THEORY)
+   ========================================= */
+function LearnSection() {
+  const weatherList = [
+    {
+      name: "Sunny",
+      icon: <Sun className="text-yellow-400 w-16 h-16 mx-auto mb-2" />,
+      traits: ["Very few or no clouds in the sky.", "The sun shines brightly.", "The temperature usually feels warm or hot."],
+      color: "bg-blue-100"
+    },
+    {
+      name: "Cloudy",
+      icon: <Cloud className="text-gray-400 w-16 h-16 mx-auto mb-2" />,
+      traits: ["White or light gray clouds cover the sky.", "Sunlight is blocked.", "The air feels cooler."],
+      color: "bg-gray-100"
+    },
+    {
+      name: "Windy",
+      icon: <Wind className="text-teal-500 w-16 h-16 mx-auto mb-2" />,
+      traits: ["The air moves quickly.", "Tree leaves and branches sway noticeably.", "Can happen when it is sunny or cloudy."],
+      color: "bg-teal-50"
+    },
+    {
+      name: "Rainy",
+      icon: <CloudRain className="text-blue-500 w-16 h-16 mx-auto mb-2" />,
+      traits: ["The sky is covered by dark gray clouds.", "Water droplets fall to the earth.", "The air temperature gets colder."],
+      color: "bg-blue-50"
+    },
+    {
+      name: "Stormy",
+      icon: <CloudLightning className="text-purple-600 w-16 h-16 mx-auto mb-2" />,
+      traits: ["The clouds are very dark.", "Heavy rain accompanied by strong winds.", "Sometimes there is lightning and thunder."],
+      color: "bg-purple-100"
+    }
+  ];
+
+  return (
+    <div className="bg-white rounded-3xl p-8 shadow-sm">
+      <h2 className="text-2xl font-bold mb-6 text-center text-sky-700">Get to Know Weather Types</h2>
+      <p className="text-center text-gray-600 mb-8">Weather is the state of the air in a place. The weather can change because it is affected by clouds, wind, and water.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {weatherList.map((item, idx) => (
+          <div key={idx} className={`${item.color} rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow`}>
+            {item.icon}
+            <h3 className="text-xl font-bold text-center mb-4">{item.name}</h3>
+            <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+              {item.traits.map((trait, i) => <li key={i}>{trait}</li>)}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   COMPONENT: REALISTIC WEATHER SIMULATOR
+   ========================================= */
+function SimulatorScreen({ clouds, wind, rain }) {
+  const canvasRef = useRef(null);
+  const treeRef = useRef(null);
+  const [lightning, setLightning] = useState(false);
+
+  // Dynamic colors based on cloud thickness (0 to 100)
+  // Sunny: rgb(135, 206, 235) - Sky Blue
+  // Stormy: rgb(40, 50, 60) - Dark Slate
+  const r = Math.max(40, 135 - clouds);
+  const g = Math.max(50, 206 - (clouds * 1.5));
+  const b = Math.max(60, 235 - (clouds * 1.7));
+  const skyColor = `rgb(${r}, ${g}, ${b})`;
+  
+  const sunOpacity = 1 - (clouds / 80); // Sun hides when clouds > 80
+  
+  // Cloud color transitions from white to dark gray
+  const cloudBrightness = Math.max(80, 255 - (clouds * 1.5));
+  const cloudColor = `rgb(${cloudBrightness}, ${cloudBrightness}, ${cloudBrightness})`;
+  
+  // Lightning effect logic
+  useEffect(() => {
+    if (clouds > 80 && rain > 60) {
+      const lightningInterval = setInterval(() => {
+        if (Math.random() > 0.7) {
+          setLightning(true);
+          setTimeout(() => setLightning(false), 150); // Flash duration
+        }
+      }, 2000);
+      return () => clearInterval(lightningInterval);
+    }
+  }, [clouds, rain]);
+
+  // Physics loop for Rain, Wind Gusts, Leaves, and Tree Sway on Canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+    
+    // Set internal canvas resolution to match display size for crispness
+    const updateCanvasSize = () => {
+      if(canvas.parentElement) {
+         canvas.width = canvas.parentElement.clientWidth;
+         canvas.height = canvas.parentElement.clientHeight;
+      }
+    };
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+
+    // Initialize raindrops
+    const drops = [];
+    for(let i=0; i < 500; i++) { // Pre-allocate max drops
+       drops.push({
+         x: Math.random() * canvas.width,
+         y: Math.random() * canvas.height,
+         length: Math.random() * 10 + 10,
+         baseSpeed: Math.random() * 5 + 5,
+         thickness: Math.random() * 1.5 + 0.5
+       });
+    }
+
+    // Initialize wind gusts (visual air streaks)
+    const gusts = [];
+    for(let i=0; i < 40; i++) {
+        gusts.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * (canvas.height * 0.8), // Keep gusts mostly in the sky
+            length: Math.random() * 80 + 40,
+            speed: Math.random() * 4 + 2
+        });
+    }
+
+    // Initialize flying leaves
+    const leaves = [];
+    for(let i=0; i < 25; i++) {
+        leaves.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 5 + 4,
+            speedX: Math.random() * 3 + 1,
+            speedY: Math.random() * 2 - 1,
+            rotation: Math.random() * 360,
+            rotSpeed: Math.random() * 10 - 5,
+            color: Math.random() > 0.5 ? '#40916c' : '#7f4f24' // Green or brown
+        });
+    }
+
+    const render = () => {
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       const time = Date.now() / 1000;
+
+       // 1. Dynamic Tree Sway Logic (Updates the DOM element directly for high performance)
+       if (treeRef.current) {
+           const baseSway = wind * 0.45;
+           // Add a wobbly flutter effect that gets wilder with more wind
+           const flutter = wind > 5 ? Math.sin(time * (wind * 0.15)) * (wind * 0.08) : 0;
+           treeRef.current.style.transform = `rotate(${baseSway + flutter}deg)`;
+       }
+       
+       if (rain === 0 && wind === 0) {
+           animationFrameId = window.requestAnimationFrame(render);
+           return; // Skip drawing particles if calm
+       }
+
+       // 2. Draw Wind Gusts (Visual Air Lines)
+       if (wind > 10) {
+           const gustOpacity = Math.min(0.5, wind / 200); // Fades in as wind increases
+           ctx.strokeStyle = `rgba(255, 255, 255, ${gustOpacity})`;
+           ctx.lineWidth = 1.5;
+           ctx.lineCap = 'round';
+           
+           const activeGusts = Math.floor((wind / 100) * gusts.length);
+           for(let i=0; i < activeGusts; i++) {
+               const g = gusts[i];
+               ctx.beginPath();
+               ctx.moveTo(g.x, g.y);
+               ctx.lineTo(g.x + g.length, g.y);
+               ctx.stroke();
+               
+               g.x += g.speed + (wind * 0.4); // Moves right based on wind
+               if (g.x > canvas.width) {
+                   g.x = -g.length; // Reset to left
+                   g.y = Math.random() * (canvas.height * 0.8);
+               }
+           }
+       }
+
+       // 3. Draw Flying Leaves
+       if (wind > 30) {
+           const activeLeaves = Math.floor(((wind - 30) / 70) * leaves.length); // Start appearing after 30% wind
+           for(let i=0; i < activeLeaves; i++) {
+               const l = leaves[i];
+               ctx.save();
+               ctx.translate(l.x, l.y);
+               ctx.rotate(l.rotation * Math.PI / 180);
+               ctx.fillStyle = l.color;
+               ctx.fillRect(-l.size/2, -l.size/2, l.size, l.size * 0.6); // Simple leaf shape
+               ctx.restore();
+               
+               l.x += l.speedX + (wind * 0.25);
+               l.y += l.speedY + Math.sin(time * 5 + i) * 2; // Wavy falling motion
+               l.rotation += l.rotSpeed + (wind * 0.1);
+               
+               // Reset leaves when they fly off screen
+               if (l.x > canvas.width || l.y > canvas.height || l.y < -50) {
+                   l.x = -20;
+                   l.y = Math.random() * (canvas.height * 0.6);
+               }
+           }
+       }
+
+       // 4. Draw Rain
+       if (rain > 0) {
+           ctx.strokeStyle = 'rgba(174, 194, 224, 0.7)'; // Rain color
+           ctx.lineCap = 'round';
+
+           const windAngle = (wind * 0.45) * (Math.PI / 180); 
+           const windSpeedX = wind * 0.25;
+           const activeDrops = Math.floor((rain / 100) * drops.length);
+
+           for(let i=0; i < activeDrops; i++) {
+               const drop = drops[i];
+               ctx.lineWidth = drop.thickness;
+               ctx.beginPath();
+               ctx.moveTo(drop.x, drop.y);
+               // Draw line accounting for wind angle
+               ctx.lineTo(drop.x + Math.sin(windAngle) * drop.length, drop.y + Math.cos(windAngle) * drop.length);
+               ctx.stroke();
+
+               // Move drop
+               drop.y += drop.baseSpeed + (rain * 0.05); // Faster when heavier rain
+               drop.x += windSpeedX;
+
+               // Reset if off-screen
+               if (drop.y > canvas.height || drop.x > canvas.width) {
+                   drop.y = -drop.length;
+                   // Spread drops wider backwards so screen doesn't empty when wind pushes them right
+                   drop.x = (Math.random() * (canvas.width + 400)) - 200; 
+               }
+           }
+       }
+       
+       animationFrameId = window.requestAnimationFrame(render);
+    };
+    
+    render();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', updateCanvasSize);
+    };
+  }, [rain, wind]);
+
+  return (
+    <div 
+      className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden shadow-inner border-4 border-gray-200 transition-colors duration-1000"
+      style={{ backgroundColor: skyColor }}
+    >
+      {/* Lightning Overlay */}
+      {lightning && <div className="absolute inset-0 bg-white opacity-80 z-40 transition-opacity duration-75"></div>}
+
+      {/* Sun */}
+      <div 
+        className="absolute top-8 left-1/2 md:left-2/3 transform -translate-x-1/2 transition-all duration-1000 z-10" 
+        style={{ opacity: Math.max(0, sunOpacity), filter: `blur(${clouds/20}px)` }}
+      >
+        <div className="relative">
+          <div className="w-20 h-20 bg-yellow-300 rounded-full shadow-[0_0_50px_rgba(250,204,21,1)]"></div>
+          {/* Sun rays pulse animation */}
+          <div className="absolute inset-0 bg-yellow-200 rounded-full animate-ping opacity-30"></div>
+        </div>
+      </div>
+
+      {/* Realistic Drifting Clouds (CSS & SVG) */}
+      <div className="absolute inset-0 overflow-hidden z-20">
+        {/* Cloud 1 */}
+        <div 
+           className="absolute top-4 left-0 transition-all duration-1000" 
+           style={{ 
+             opacity: clouds > 10 ? 1 : 0, 
+             transform: `translateX(${clouds > 10 ? (Date.now() / 100 * (wind/50 + 0.1)) % 1000 - 200 : -200}px)`, // Very basic pseudo-animation for drifting
+             animation: `drift ${20 - (wind*0.15)}s infinite linear`
+           }}
+        >
+           <svg width="180" height="100" viewBox="0 0 180 100" fill={cloudColor} className="transition-colors duration-1000">
+             <circle cx="50" cy="50" r="30" />
+             <circle cx="90" cy="40" r="40" />
+             <circle cx="130" cy="50" r="30" />
+             <rect x="50" y="50" width="80" height="30" rx="15" />
+           </svg>
+        </div>
+
+        {/* Cloud 2 */}
+        <div 
+           className="absolute top-12 left-1/3 transition-all duration-1000" 
+           style={{ 
+             opacity: clouds > 40 ? 1 : 0,
+             animation: `drift ${25 - (wind*0.15)}s infinite linear 2s`
+           }}
+        >
+           <svg width="220" height="120" viewBox="0 0 220 120" fill={cloudColor} className="transition-colors duration-1000 opacity-90">
+             <circle cx="60" cy="60" r="40" />
+             <circle cx="110" cy="45" r="50" />
+             <circle cx="160" cy="60" r="40" />
+             <rect x="60" y="60" width="100" height="40" rx="20" />
+           </svg>
+        </div>
+        
+        {/* Cloud 3 */}
+        <div 
+           className="absolute top-0 right-10 transition-all duration-1000" 
+           style={{ 
+             opacity: clouds > 70 ? 1 : 0,
+             animation: `drift ${18 - (wind*0.15)}s infinite linear 5s`
+           }}
+        >
+           <svg width="250" height="150" viewBox="0 0 250 150" fill={cloudColor} className="transition-colors duration-1000 opacity-80">
+             <circle cx="70" cy="70" r="50" />
+             <circle cx="125" cy="50" r="60" />
+             <circle cx="180" cy="70" r="50" />
+             <rect x="70" y="70" width="110" height="50" rx="25" />
+           </svg>
+        </div>
+      </div>
+
+      {/* Physics Rain Canvas */}
+      <canvas ref={canvasRef} className="absolute inset-0 z-30 pointer-events-none" />
+
+      {/* Ground & Environment */}
+      <div className="absolute bottom-0 w-full h-1/4 bg-gradient-to-t from-emerald-700 to-emerald-500 z-10 border-t-2 border-emerald-400/50 transition-colors duration-1000"
+           style={{ filter: `brightness(${100 - (clouds*0.4)}%)` }}>
+      </div>
+      
+      {/* SVG Tree (reacts dynamically to wind via ref) */}
+      <div 
+        ref={treeRef}
+        className="absolute bottom-[20%] left-[20%] z-20 origin-bottom" 
+        style={{ filter: `brightness(${100 - (clouds*0.4)}%)` }}
+      >
+         <svg width="100" height="150" viewBox="0 0 100 150">
+           {/* Trunk */}
+           <path d="M45,150 Q45,100 48,60 L52,60 Q55,100 55,150 Z" fill="#5C4033" />
+           {/* Leaves - layered for depth */}
+           <circle cx="50" cy="60" r="35" fill="#2d6a4f" />
+           <circle cx="30" cy="80" r="30" fill="#1b4332" />
+           <circle cx="70" cy="80" r="30" fill="#1b4332" />
+           <circle cx="50" cy="45" r="30" fill="#40916c" />
+         </svg>
+      </div>
+
+      {/* Global CSS for cloud animation */}
+      <style>{`
+        @keyframes drift {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(300%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* =========================================
+   COMPONENT 2: SIMULATOR (SANDBOX)
+   ========================================= */
+function SimulatorSandbox() {
+  const [clouds, setClouds] = useState(0); // 0 - 100
+  const [wind, setWind] = useState(0); // 0 - 100
+  const [rain, setRain] = useState(0); // 0 - 100
+
+  // Logic to determine weather status based on sliders
+  let weatherStatus = "Sunny";
+  if (clouds > 70 && rain > 50 && wind > 50) weatherStatus = "Stormy";
+  else if (rain > 20) weatherStatus = "Rainy";
+  else if (clouds > 50 && wind > 40) weatherStatus = "Cloudy & Windy";
+  else if (clouds > 40) weatherStatus = "Overcast / Cloudy";
+  else if (wind > 40) weatherStatus = "Sunny & Windy";
+
+  return (
+    <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm">
+      <h2 className="text-2xl font-bold mb-2 text-sky-700">Simulator Area</h2>
+      <p className="text-gray-600 mb-6">Drag the sliders below to control the weather. Watch what happens on the screen!</p>
+      
+      <SimulatorScreen clouds={clouds} wind={wind} rain={rain} />
+
+      <div className="mt-8 bg-sky-50 p-4 rounded-xl text-center border border-sky-100 shadow-inner">
+        <span className="text-sky-500 text-sm uppercase tracking-wider font-bold">Current Condition:</span>
+        <h3 className="text-3xl font-black text-sky-800 tracking-tight">{weatherStatus}</h3>
+      </div>
+
+      <div className="mt-8 space-y-6">
+        {/* Cloud Slider */}
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+          <div className="flex justify-between items-center mb-2">
+            <label className="font-bold flex items-center gap-2"><Cloud className="text-gray-500"/> Cloud Cover</label>
+            <span className="text-gray-600 font-mono font-bold bg-white px-2 py-1 rounded shadow-sm">{clouds}%</span>
+          </div>
+          <input type="range" min="0" max="100" value={clouds} onChange={(e) => setClouds(Number(e.target.value))} className="w-full h-3 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-gray-600" />
+          <div className="flex justify-between text-xs text-gray-500 mt-2 font-medium"><span>Clear Sky</span><span>Dark & Heavy</span></div>
+        </div>
+
+        {/* Wind Slider */}
+        <div className="bg-teal-50 p-4 rounded-xl border border-teal-200">
+          <div className="flex justify-between items-center mb-2">
+            <label className="font-bold flex items-center gap-2"><Wind className="text-teal-600"/> Wind Speed</label>
+            <span className="text-teal-700 font-mono font-bold bg-white px-2 py-1 rounded shadow-sm">{wind} km/h</span>
+          </div>
+          <input type="range" min="0" max="100" value={wind} onChange={(e) => setWind(Number(e.target.value))} className="w-full h-3 bg-teal-200 rounded-lg appearance-none cursor-pointer accent-teal-600" />
+          <div className="flex justify-between text-xs text-teal-600 mt-2 font-medium"><span>Calm</span><span>Gale Force</span></div>
+        </div>
+
+        {/* Rain Slider */}
+        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+          <div className="flex justify-between items-center mb-2">
+            <label className="font-bold flex items-center gap-2"><CloudRain className="text-blue-600"/> Rainfall</label>
+            <span className="text-blue-700 font-mono font-bold bg-white px-2 py-1 rounded shadow-sm">{rain}%</span>
+          </div>
+          <input type="range" min="0" max="100" value={rain} onChange={(e) => setRain(Number(e.target.value))} className="w-full h-3 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+          <div className="flex justify-between text-xs text-blue-600 mt-2 font-medium"><span>Dry</span><span>Heavy Pour</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   COMPONENT 3: QUIZ (GUESS THE WEATHER)
+   ========================================= */
+function QuizSection() {
+  const [activeQuestion, setActiveQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answerStatus, setAnswerStatus] = useState(null); // 'correct' | 'wrong' | null
+
+  // Question List
+  const questionList = [
+    {
+      id: 1,
+      question: "Look at the sky in the simulator. Clouds cover the sun, but there is no rain. The wind is calm. What weather is this?",
+      conditions: { clouds: 60, wind: 0, rain: 0 },
+      options: ["Sunny", "Overcast / Cloudy", "Stormy"],
+      correctAnswer: "Overcast / Cloudy"
+    },
+    {
+      id: 2,
+      question: "Wow, the sky has turned very dark! Heavy rain is falling and the tree is swaying hard from the wind. What type of weather is this?",
+      conditions: { clouds: 100, wind: 80, rain: 90 },
+      options: ["Stormy", "Sunny & Windy", "Overcast / Cloudy"],
+      correctAnswer: "Stormy"
+    },
+    {
+      id: 3,
+      question: "The sky is very blue, the sun is shining brightly, and no water is falling. The tree is completely still because there is no wind. This is called...",
+      conditions: { clouds: 0, wind: 0, rain: 0 },
+      options: ["Rainy", "Windy", "Sunny"],
+      correctAnswer: "Sunny"
+    },
+    {
+      id: 4,
+      question: "A few clouds are gathering, there is no rain, but look at that tree! Its leaves and trunk are swaying quickly. This weather is...",
+      conditions: { clouds: 20, wind: 75, rain: 0 },
+      options: ["Sunny & Windy", "Rainy", "Overcast / Cloudy"],
+      correctAnswer: "Sunny & Windy"
+    },
+    {
+      id: 5,
+      question: "The sky is getting gray and water is falling from the clouds. The tree is mostly still. What do we call this wet weather?",
+      conditions: { clouds: 60, wind: 5, rain: 50 },
+      options: ["Rainy", "Sunny", "Stormy"],
+      correctAnswer: "Rainy"
+    },
+    {
+      id: 6,
+      question: "There is no rain falling, but the sky is very dark with clouds and the wind is blowing the leaves away. What is this combination?",
+      conditions: { clouds: 80, wind: 70, rain: 0 },
+      options: ["Stormy", "Cloudy & Windy", "Sunny & Windy"],
+      correctAnswer: "Cloudy & Windy"
+    },
+    {
+      id: 7,
+      question: "It's a beautiful day! The sun is out with almost no clouds, just a very gentle breeze moving the tree slightly. No rain at all.",
+      conditions: { clouds: 10, wind: 15, rain: 0 },
+      options: ["Sunny", "Rainy", "Overcast / Cloudy"],
+      correctAnswer: "Sunny"
+    },
+    {
+      id: 8,
+      question: "Uh oh, look at those lightning flashes! The clouds are extremely dark, rain is pouring, and the wind is wild!",
+      conditions: { clouds: 100, wind: 85, rain: 90 },
+      options: ["Sunny & Windy", "Rainy", "Stormy"],
+      correctAnswer: "Stormy"
+    },
+    {
+      id: 9,
+      question: "The sun is completely hidden behind a thick blanket of gray clouds. It's not raining and the wind is quiet, but it looks gloomy.",
+      conditions: { clouds: 85, wind: 0, rain: 0 },
+      options: ["Overcast / Cloudy", "Stormy", "Sunny"],
+      correctAnswer: "Overcast / Cloudy"
+    },
+    {
+      id: 10,
+      question: "Not a drop of rain, and the sky is perfectly clear. However, a super strong gale is making the leaves fly everywhere!",
+      conditions: { clouds: 0, wind: 95, rain: 0 },
+      options: ["Sunny & Windy", "Cloudy & Windy", "Stormy"],
+      correctAnswer: "Sunny & Windy"
+    }
+  ];
+
+  const currentQ = questionList[activeQuestion];
+
+  const checkAnswer = (option) => {
+    setSelectedAnswer(option);
+    if (option === currentQ.correctAnswer) {
+      setAnswerStatus('correct');
+    } else {
+      setAnswerStatus('wrong');
+    }
+  };
+
+  const nextQuestion = () => {
+    if (activeQuestion < questionList.length - 1) {
+      setActiveQuestion(activeQuestion + 1);
+      setSelectedAnswer(null);
+      setAnswerStatus(null);
+    } else {
+      // Quiz Finished
+      setActiveQuestion(-1);
+    }
+  };
+
+  const restartQuiz = () => {
+    setActiveQuestion(0);
+    setSelectedAnswer(null);
+    setAnswerStatus(null);
+  };
+
+  // View when quiz is finished
+  if (activeQuestion === -1) {
+    return (
+      <div className="bg-white rounded-3xl p-10 shadow-sm text-center">
+        <Sun className="text-yellow-400 w-32 h-32 mx-auto mb-6 drop-shadow-md animate-bounce" />
+        <h2 className="text-4xl font-black text-sky-600 mb-4">Congratulations!</h2>
+        <p className="text-xl text-gray-600 mb-8">You have completed the Weather Quiz mission. You are now an expert weather observer!</p>
+        <button onClick={restartQuiz} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform hover:scale-105">
+          Play Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-sky-700">Guess the Weather</h2>
+        <span className="bg-sky-100 text-sky-700 px-4 py-1 rounded-full font-bold">Question {activeQuestion + 1} / {questionList.length}</span>
+      </div>
+      
+      {/* Visual Simulator for the Question */}
+      <div className="pointer-events-none mb-6">
+        <SimulatorScreen clouds={currentQ.conditions.clouds} wind={currentQ.conditions.wind} rain={currentQ.conditions.rain} />
+      </div>
+
+      <p className="text-lg text-gray-800 font-medium mb-6 bg-yellow-50 p-4 border-l-4 border-yellow-400 rounded-r-lg">
+        {currentQ.question}
+      </p>
+
+      {/* Answer Options */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {currentQ.options.map((option, i) => {
+          let btnClass = "bg-gray-50 border-2 border-gray-200 hover:bg-sky-50 hover:border-sky-300 text-gray-700";
+          
+          if (selectedAnswer !== null) {
+            if (option === currentQ.correctAnswer) {
+              btnClass = "bg-green-100 border-2 border-green-500 text-green-800 font-bold"; // Correct is always green
+            } else if (option === selectedAnswer && answerStatus === 'wrong') {
+              btnClass = "bg-red-100 border-2 border-red-500 text-red-800"; // Selected wrong is red
+            } else {
+              btnClass = "bg-gray-100 border-2 border-gray-200 text-gray-400 opacity-50 cursor-not-allowed"; // Others dim
+            }
+          }
+
+          return (
+            <button 
+              key={i} 
+              onClick={() => selectedAnswer === null && checkAnswer(option)}
+              disabled={selectedAnswer !== null}
+              className={`p-4 rounded-xl transition-all shadow-sm ${btnClass}`}
+            >
+              {option}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Feedback & Next Button */}
+      {answerStatus && (
+        <div className={`p-4 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 ${answerStatus === 'correct' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className="flex items-center gap-3">
+            {answerStatus === 'correct' ? <CheckCircle className="text-green-500 w-8 h-8"/> : <XCircle className="text-red-500 w-8 h-8"/>}
+            <div>
+              <p className={`font-bold text-lg ${answerStatus === 'correct' ? 'text-green-700' : 'text-red-700'}`}>
+                {answerStatus === 'correct' ? 'Wow, Your Answer is Spot On!' : 'Oops, Not Quite Right!'}
+              </p>
+              {answerStatus === 'wrong' && <p className="text-sm text-red-600">The correct answer is <b>{currentQ.correctAnswer}</b>.</p>}
+            </div>
+          </div>
+          <button 
+            onClick={nextQuestion}
+            className="bg-gray-800 text-white px-6 py-2 rounded-full font-bold hover:bg-black transition-colors"
+          >
+            {activeQuestion < questionList.length - 1 ? 'Next Question' : 'Finish Quiz'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
